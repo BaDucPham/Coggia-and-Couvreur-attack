@@ -1,0 +1,100 @@
+//Initial parameters
+q := 2;
+m := 10;
+
+// Some fields and polynomial ring
+Fq := GF(q);
+Fqm := GF(q^m);
+P<x,y,z> := PolynomialRing(Fqm,3);
+
+
+
+// Write a vector GF(2^n)^n in a matrix GF(2)^(nxn)
+function transform_to_F2(vector)
+    len := #vector;
+    M := ZeroMatrix(Fq,m,len);
+    for i in [1..len] do
+	seq := Eltseq(vector[i],Fq);
+	for j in [1..m] do
+	    M[j,i] := seq[j];
+	end for;
+    end for;
+    return M;
+end function;
+
+// Caculating rank of a vector
+function rank(vector)
+    M := transform_to_F2(vector);
+    return Rank(M);
+end function;
+
+//This function gives the frobenius of variable x and y
+function Frob(p,i)
+    return p^(q^i);
+end function;
+
+function eval_neg(index,gamma)
+    M := ZeroMatrix(Fqm,4,4);
+    for i in [1..4] do
+	M[i,1] := 1;
+	for j in [2..4] do
+	    M[i,j] := Frobenius(gamma[j-1],index[i]);
+	end for;
+    end for;
+    return Determinant(M);
+end function;
+
+// This function is used to creat the function f^(ijk)
+function pol(index)
+    M := ZeroMatrix(P,4,4);
+    var := [P!x,y,z];
+    for i in [1..4] do
+	M[i,1] := 1;
+	for j in [2..4] do
+	    M[i,j] := Frob(var[j-1],index[i]);
+	end for;
+    end for;
+    return Determinant(M);
+end function;
+
+// Initial the value of gamma1 and gamma2.
+
+    gamma1 := Random(Fqm);
+    gamma2 := Random(Fqm);
+    gamma3 := Random(Fqm);
+
+
+gamma := [gamma1,gamma2,gamma3];
+alpha := eval_neg([-4,-3,-2,0],gamma)*eval_neg([-5,-3,-2,-1],gamma)/(eval_neg([-5,-3,-2,0],gamma)*eval_neg([-4,-3,-2,-1],gamma));
+
+beta := eval_neg([-4,-3,-2,0],gamma)*eval_neg([-5,-4,-2,-1],gamma)/(eval_neg([-5,-4,-2,0],gamma)*eval_neg([-4,-3,-2,-1],gamma));
+
+zeta := eval_neg([-4,-3,-2,0],gamma)*eval_neg([-5,-4,-3,-1],gamma)/(eval_neg([-5,-4,-3,0],gamma)*eval_neg([-4,-3,-2,-1],gamma));
+
+
+f := pol([1,2,3,5])*pol([0,2,3,4])-Frobenius(alpha,5)*pol([0,2,3,5])*pol([1,2,3,4]);
+g := pol([1,2,3,5])*pol([0,1,3,4])-Frobenius(beta,5)*pol([0,1,3,5])*pol([1,2,3,4]);
+h := pol([1,2,3,5])*pol([0,1,2,4])-Frobenius(zeta,5)*pol([0,1,2,5])*pol([1,2,3,4]);
+f0 := pol([0,1,2,3])^(q+1);
+
+
+fr := f div f0;
+gr := g div f0;
+hr := h div f0;
+
+print "Step 1";
+print Degree(fr), Degree(gr), Degree(hr);
+
+
+res_1 := Resultant(fr,gr,x);
+res_2 := Resultant(fr,hr,x);
+
+print "Step 2";
+print res_1;
+print res_2;
+
+res := Resultant(res_1,res_2,y);
+
+print "Step 3";
+
+print res;
