@@ -1,0 +1,86 @@
+//Initial parameters
+q := 2;
+m := 10;
+
+
+// Some fields and polynomial ring
+Fq := GF(q);
+Fqm := GF(q^m);
+P<x,y> := PolynomialRing(Fqm,2);
+Q<z> := PolynomialRing(Fqm);
+
+//This function gives the frobenius of variable x and y
+function Frob(p,i)
+    return p^(q^i);
+end function;
+
+function eval_neg(index,gamma)
+    M := ZeroMatrix(Fqm,3,3);
+    for i in [1..3] do
+	M[i,1] := 1;
+	for j in [2..3] do
+	    M[i,j] := Frobenius(gamma[j-1],index[i]);
+	end for;
+    end for;
+    return Determinant(M);
+end function;
+
+// This function is used to creat the function f^(ijk)
+function pol(i,j,k)
+    f := (Frob(x,i)*Frob(y,j)-Frob(x,j)*Frob(y,i))+(Frob(x,k)*Frob(y,i)-Frob(x,i)*Frob(y,k))+(Frob(x,j)*Frob(y,k)-Frob(x,k)*Frob(y,j));
+    return f;
+end function;
+
+// Initial the value of gamma1 and gamma2.
+found := true;
+gamma1 := Fqm!1; gamma2 := Fqm!1;
+while true do
+    gamma1 := Random(Fqm);
+    gamma2 := Random(Fqm);
+    if gamma1 ne 0 and gamma2 ne 0 and not gamma1/gamma2 in Fq then
+	break;
+    end if;
+end while;
+
+// Initial the value of alpha and beta
+alpha := eval_neg([-3,-2,0],[gamma1,gamma2])*eval_neg([-4,-2,-1],[gamma1,gamma2])/(eval_neg([-4,-2,0],[gamma1,gamma2])*eval_neg([-3,-2,-1],[gamma1,gamma2]));
+
+beta := eval_neg([-3,-2,0],[gamma1,gamma2])*eval_neg([-4,-3,-1],[gamma1,gamma2])/(eval_neg([-4,-3,0],[gamma1,gamma2])*eval_neg([-3,-2,-1],[gamma1,gamma2]));
+
+// Finding the polynomials taking (alpha,beta) as a root
+f := pol(1,2,4)*pol(0,2,3)-Frobenius(alpha,4)*pol(0,2,4)*pol(1,2,3);
+g := pol(1,2,4)*pol(0,1,3)-Frobenius(beta,4)*pol(0,1,4)*pol(1,2,3);
+f0 := pol(0,1,2)^(q+1);
+
+
+// Finding the reduced polynomial 
+fr := f div f0;
+gr := g div f0;
+
+// Finding the root of the system
+ry := Resultant(fr,gr,x);
+rooty := Roots(UnivariatePolynomial(ry));
+polx := Gcd(Evaluate(fr,y,rooty[1][1]),Evaluate(gr,y,rooty[1][1]));
+rootx := Roots(UnivariatePolynomial(polx));
+root := [rootx[1][1],rooty[1][1]];
+
+print "This is a good root?", Evaluate(fr,root) eq 0 and Evaluate(gr,root) eq 0;
+
+
+// This part is for test the number of root if we consider only one polynomial
+count := 0;
+for var1 in Fqm do
+    if (var1 ne 0) and (var1 ne 1) then
+	fry := Evaluate(fr,x,var1);
+	L := Roots(UnivariatePolynomial(fry));
+	count +:= #L;
+    end if;
+end for;
+
+//Compare with the cardiality of |PGL(3,Fq) = (2^4-2)(2^4-2^2) = 168
+print "Number of roots of only one polynomial is ",count, ", equal |PGL(3,Fq)|?", count eq 168;
+
+
+
+
+
